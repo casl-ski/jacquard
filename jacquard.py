@@ -371,10 +371,10 @@ class KnittingDesigner:
         self.root.configure(bg="#2d2d2d")
 
         # Configuration
-        self.grid_size = 128
-        self.tile_size = 5  # pixels per tile
-        self.min_tile_size = 2
-        self.max_tile_size = 100
+        self.grid_size = 64
+        self.tile_size = 100# pixels per tile
+        self.min_tile_size = 50
+        self.max_tile_size = 200
         self.max_colors = 15
 
         # State
@@ -403,8 +403,14 @@ class KnittingDesigner:
         self.is_selecting = False
         self.clipboard = None  # Stores copied/cut data as 2D list of colors
 
+        # Mark mode state (for tracking completed stitches)
+        self.mark_mode = False
+        self.marked_tiles = set()  # Set of (row, col) tuples
+        self.mark_ids = {}  # Maps (row, col) to canvas item IDs for the X marks
+
         self.setup_ui()
         self.load_settings()
+        self.load_project()
 
     def setup_ui(self):
         # Main container
@@ -449,6 +455,29 @@ class KnittingDesigner:
             # Label
             label = tk.Label(frame, text=f"{i+1:2d}", fg="#888888", bg="#2d2d2d", font=("Arial", 9))
             label.pack(side=tk.LEFT)
+
+        # Mark button (16th slot) - for tracking completed stitches
+        mark_frame = tk.Frame(color_frame, bg="#2d2d2d")
+        mark_frame.pack(pady=2)
+
+        self.mark_button = tk.Button(
+            mark_frame,
+            text="X",
+            width=3,
+            height=1,
+            bg="#555555",
+            fg="#ff6666",
+            font=("Arial", 10, "bold"),
+            relief=tk.FLAT,
+            borderwidth=2,
+            highlightthickness=2,
+            highlightbackground="#2d2d2d"
+        )
+        self.mark_button.pack(side=tk.LEFT, padx=(0, 5))
+        self.mark_button.bind("<Button-1>", lambda e: self.toggle_mark_mode())
+
+        mark_label = tk.Label(mark_frame, text="Mark", fg="#888888", bg="#2d2d2d", font=("Arial", 9))
+        mark_label.pack(side=tk.LEFT)
 
         # Instructions
         instructions = tk.Label(
@@ -517,35 +546,63 @@ class KnittingDesigner:
         grid_frame = tk.Frame(parent, bg="#2d2d2d")
         grid_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # Canvas with scrollbars
+        # Header size
+        self.header_size = 20
+
+        # Canvas with scrollbars using grid layout
         canvas_frame = tk.Frame(grid_frame, bg="#2d2d2d")
         canvas_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Scrollbars
-        h_scroll = tk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL)
-        h_scroll.pack(side=tk.BOTTOM, fill=tk.X)
+        # Corner spacer (top-left)
+        corner = tk.Frame(canvas_frame, bg="#3d3d3d", width=self.header_size, height=self.header_size)
+        corner.grid(row=0, column=0, sticky="nsew")
 
-        v_scroll = tk.Scrollbar(canvas_frame, orient=tk.VERTICAL)
-        v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        # Column header canvas (top)
+        self.col_header_canvas = tk.Canvas(
+            canvas_frame,
+            height=self.header_size,
+            bg="#3d3d3d",
+            highlightthickness=0
+        )
+        self.col_header_canvas.grid(row=0, column=1, sticky="ew")
 
-        # Canvas
+        # Row header canvas (left)
+        self.row_header_canvas = tk.Canvas(
+            canvas_frame,
+            width=self.header_size,
+            bg="#3d3d3d",
+            highlightthickness=0
+        )
+        self.row_header_canvas.grid(row=1, column=0, sticky="ns")
+
+        # Main canvas
         canvas_size = self.grid_size * self.tile_size
         self.canvas = tk.Canvas(
             canvas_frame,
             width=min(640, canvas_size),
             height=min(640, canvas_size),
             bg="#3d3d3d",
-            highlightthickness=0,
-            xscrollcommand=h_scroll.set,
-            yscrollcommand=v_scroll.set
+            highlightthickness=0
         )
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.canvas.grid(row=1, column=1, sticky="nsew")
 
-        h_scroll.config(command=self.canvas.xview)
-        v_scroll.config(command=self.canvas.yview)
+        # Scrollbars
+        h_scroll = tk.Scrollbar(canvas_frame, orient=tk.HORIZONTAL, command=self._on_h_scroll)
+        h_scroll.grid(row=2, column=1, sticky="ew")
+
+        v_scroll = tk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self._on_v_scroll)
+        v_scroll.grid(row=1, column=2, sticky="ns")
+
+        self.canvas.config(xscrollcommand=h_scroll.set, yscrollcommand=v_scroll.set)
+
+        # Configure grid weights for resizing
+        canvas_frame.grid_rowconfigure(1, weight=1)
+        canvas_frame.grid_columnconfigure(1, weight=1)
 
         # Set scroll region
         self.canvas.config(scrollregion=(0, 0, canvas_size, canvas_size))
+        self.col_header_canvas.config(scrollregion=(0, 0, canvas_size, self.header_size))
+        self.row_header_canvas.config(scrollregion=(0, 0, self.header_size, canvas_size))
 
         # Draw initial grid
         self.draw_grid()
@@ -579,7 +636,67 @@ class KnittingDesigner:
         self.root.bind("<Control-X>", self.cut_selection)
         self.root.bind("<Control-v>", self.paste_selection)
         self.root.bind("<Control-V>", self.paste_selection)
+        self.root.bind("<Control-s>", self.save_project)
+        self.root.bind("<Control-S>", self.save_project)
         self.root.bind("<Escape>", self.clear_selection)
+
+    def _on_h_scroll(self, *args):
+        """Handle horizontal scrolling - sync main canvas and column header."""
+        self.canvas.xview(*args)
+        self.col_header_canvas.xview(*args)
+
+    def _on_v_scroll(self, *args):
+        """Handle vertical scrolling - sync main canvas and row header."""
+        self.canvas.yview(*args)
+        self.row_header_canvas.yview(*args)
+
+    def _col_to_excel(self, col):
+        """Convert column number to Excel-style letter (0=A, 25=Z, 26=AA, etc.)."""
+        result = ""
+        col += 1  # 1-indexed
+        while col > 0:
+            col -= 1
+            result = chr(ord('A') + col % 26) + result
+            col //= 26
+        return result
+
+    def draw_headers(self):
+        """Draw row and column headers."""
+        # Clear existing headers
+        self.col_header_canvas.delete("all")
+        self.row_header_canvas.delete("all")
+
+        canvas_size = self.grid_size * self.tile_size
+
+        # Update scroll regions
+        self.col_header_canvas.config(scrollregion=(0, 0, canvas_size, self.header_size))
+        self.row_header_canvas.config(scrollregion=(0, 0, self.header_size, canvas_size))
+
+        # Determine font size based on tile size
+        font_size = max(6, min(10, self.tile_size - 2))
+        header_font = ("Arial", font_size)
+
+        # Draw col headers (1, 2, 3, ...)
+        for col in range(self.grid_size):
+            x = col * self.tile_size + self.tile_size // 2
+            label = str(col + 1)
+            self.col_header_canvas.create_text(
+                x, self.header_size // 2,
+                text=label,
+                fill="#888888",
+                font=header_font
+            )
+
+        # Draw row headers (1, 2, 3, ...)
+        for row in range(self.grid_size):
+            y = row * self.tile_size + self.tile_size // 2
+            label = str(row + 1)
+            self.row_header_canvas.create_text(
+                self.header_size // 2, y,
+                text=label,
+                fill="#888888",
+                font=header_font
+            )
 
     def draw_grid(self):
         """Draw the entire grid."""
@@ -602,6 +719,12 @@ class KnittingDesigner:
                 )
                 self.tile_ids[row][col] = tile_id
 
+        # Draw headers
+        self.draw_headers()
+
+        # Redraw marks
+        self.redraw_all_marks()
+
         # Redraw selection if active
         if self.selection_start and self.selection_end:
             self._draw_selection_rect()
@@ -609,6 +732,13 @@ class KnittingDesigner:
     def select_color(self, index):
         """Select a color for painting."""
         self.selected_color_index = index
+        self.mark_mode = False
+        self.update_color_selection()
+
+    def toggle_mark_mode(self):
+        """Toggle mark mode for tracking completed stitches."""
+        self.mark_mode = True
+        self.selected_color_index = -1  # Deselect color
         self.update_color_selection()
 
     def edit_color(self, index):
@@ -637,6 +767,12 @@ class KnittingDesigner:
             else:
                 btn.configure(highlightbackground="#2d2d2d", highlightthickness=2)
 
+        # Update mark button highlight
+        if self.mark_mode:
+            self.mark_button.configure(highlightbackground="#ffffff", highlightthickness=3)
+        else:
+            self.mark_button.configure(highlightbackground="#2d2d2d", highlightthickness=2)
+
     def get_tile_at(self, event):
         """Get tile coordinates from canvas event."""
         # Convert to canvas coordinates
@@ -664,20 +800,86 @@ class KnittingDesigner:
         self.grid_data[row][col] = color
         self.canvas.itemconfig(self.tile_ids[row][col], fill=color)
 
+    def toggle_mark(self, row, col):
+        """Toggle the X mark on a tile."""
+        if (row, col) in self.marked_tiles:
+            # Remove mark
+            self.marked_tiles.discard((row, col))
+            if (row, col) in self.mark_ids:
+                for item_id in self.mark_ids[(row, col)]:
+                    self.canvas.delete(item_id)
+                del self.mark_ids[(row, col)]
+        else:
+            # Add mark
+            self.marked_tiles.add((row, col))
+            self.draw_mark(row, col)
+
+    def draw_mark(self, row, col):
+        """Draw an X mark on the specified tile."""
+        x1 = col * self.tile_size
+        y1 = row * self.tile_size
+        x2 = x1 + self.tile_size
+        y2 = y1 + self.tile_size
+
+        # Padding from edges
+        padding = max(2, self.tile_size // 6)
+
+        # Draw X with two lines
+        line1 = self.canvas.create_line(
+            x1 + padding, y1 + padding,
+            x2 - padding, y2 - padding,
+            fill="#ff0000", width=max(2, self.tile_size // 20), tags="mark"
+        )
+        line2 = self.canvas.create_line(
+            x2 - padding, y1 + padding,
+            x1 + padding, y2 - padding,
+            fill="#ff0000", width=max(2, self.tile_size // 20), tags="mark"
+        )
+        self.mark_ids[(row, col)] = [line1, line2]
+
+    def redraw_all_marks(self):
+        """Redraw all X marks (called after zoom or grid redraw)."""
+        # Clear existing mark canvas items
+        self.canvas.delete("mark")
+        self.mark_ids.clear()
+
+        # Redraw all marks
+        for row, col in self.marked_tiles:
+            self.draw_mark(row, col)
+
     def on_canvas_click(self, event):
         """Handle canvas click."""
-        self.is_dragging = True
-        self.current_stroke = []
         pos = self.get_tile_at(event)
-        if pos:
+        if not pos:
+            return
+
+        if self.mark_mode:
+            self.is_dragging = True
+            # Determine if we're adding or removing marks based on first tile
+            self.mark_adding = (pos[0], pos[1]) not in self.marked_tiles
+            self.toggle_mark(*pos)
+        else:
+            self.is_dragging = True
+            self.current_stroke = []
             self.paint_tile(*pos)
 
     def on_canvas_drag(self, event):
-        """Handle canvas drag for continuous painting."""
-        if self.is_dragging:
-            pos = self.get_tile_at(event)
-            if pos:
-                self.paint_tile(*pos)
+        """Handle canvas drag for continuous painting/marking."""
+        if not self.is_dragging:
+            return
+        pos = self.get_tile_at(event)
+        if not pos:
+            return
+
+        if self.mark_mode:
+            # Add or remove marks based on initial click action
+            is_marked = (pos[0], pos[1]) in self.marked_tiles
+            if self.mark_adding and not is_marked:
+                self.toggle_mark(*pos)
+            elif not self.mark_adding and is_marked:
+                self.toggle_mark(*pos)
+        else:
+            self.paint_tile(*pos)
 
     def on_canvas_release(self, event):
         """Handle mouse release."""
@@ -709,12 +911,14 @@ class KnittingDesigner:
             zoom_percent = int((self.tile_size / 5) * 100)
             self.zoom_label.config(text=f"{zoom_percent}%")
 
-            # Redraw grid
+            # Redraw grid (includes headers)
             self.draw_grid()
 
             # Update scroll region
             canvas_size = self.grid_size * self.tile_size
             self.canvas.config(scrollregion=(0, 0, canvas_size, canvas_size))
+            self.col_header_canvas.config(scrollregion=(0, 0, canvas_size, self.header_size))
+            self.row_header_canvas.config(scrollregion=(0, 0, self.header_size, canvas_size))
 
     def undo(self, _event=None):
         """Undo the last stroke."""
@@ -767,7 +971,8 @@ class KnittingDesigner:
     def _draw_selection_rect(self):
         """Draw or update the selection rectangle."""
         if self.selection_rect_id:
-            self.canvas.delete(self.selection_rect_id)
+            for rect_id in self.selection_rect_id:
+                self.canvas.delete(rect_id)
             self.selection_rect_id = None
 
         if not self.selection_start or not self.selection_end:
@@ -785,18 +990,42 @@ class KnittingDesigner:
         x2 = (max_col + 1) * self.tile_size
         y2 = (max_row + 1) * self.tile_size
 
-        # Draw dashed selection rectangle
-        self.selection_rect_id = self.canvas.create_rectangle(
-            x1, y1, x2, y2,
-            outline="#00aaff",
-            width=2,
-            dash=(4, 4)
+        # Draw selection rectangle with thick, visible border
+        # Create multiple rectangles for a "marching ants" style effect
+        self.selection_rect_id = []
+
+        # Outer glow/shadow (dark)
+        outer = self.canvas.create_rectangle(
+            x1 - 1, y1 - 1, x2 + 1, y2 + 1,
+            outline="#000000",
+            width=3
         )
+        self.selection_rect_id.append(outer)
+
+        # Main selection rectangle (bright cyan, thick)
+        main = self.canvas.create_rectangle(
+            x1, y1, x2, y2,
+            outline="#00ffff",
+            width=4,
+            dash=(8, 4)
+        )
+        self.selection_rect_id.append(main)
+
+        # Inner highlight (white dashed, offset)
+        inner = self.canvas.create_rectangle(
+            x1, y1, x2, y2,
+            outline="#ffffff",
+            width=2,
+            dash=(4, 8),
+            dashoffset=6
+        )
+        self.selection_rect_id.append(inner)
 
     def clear_selection(self, _event=None):
         """Clear the current selection."""
         if self.selection_rect_id:
-            self.canvas.delete(self.selection_rect_id)
+            for rect_id in self.selection_rect_id:
+                self.canvas.delete(rect_id)
             self.selection_rect_id = None
         self.selection_start = None
         self.selection_end = None
@@ -931,10 +1160,48 @@ class KnittingDesigner:
         except Exception:
             pass
 
+    def save_project(self, _event=None):
+        """Save the current project (grid data and marks) to file."""
+        project = {
+            "grid_size": self.grid_size,
+            "grid_data": self.grid_data,
+            "marked_tiles": list(self.marked_tiles)  # Convert set to list for JSON
+        }
+        project_path = os.path.join(os.path.dirname(__file__), "knitting_project.json")
+        try:
+            with open(project_path, "w") as f:
+                json.dump(project, f)
+        except Exception:
+            pass
+
+    def load_project(self):
+        """Load the project (grid data and marks) from file."""
+        project_path = os.path.join(os.path.dirname(__file__), "knitting_project.json")
+        try:
+            with open(project_path, "r") as f:
+                project = json.load(f)
+                if "grid_data" in project:
+                    loaded_grid = project["grid_data"]
+                    # Copy data, respecting current grid size
+                    for row in range(min(len(loaded_grid), self.grid_size)):
+                        for col in range(min(len(loaded_grid[row]), self.grid_size)):
+                            self.grid_data[row][col] = loaded_grid[row][col]
+                if "marked_tiles" in project:
+                    # Convert list back to set of tuples
+                    self.marked_tiles = set(tuple(tile) for tile in project["marked_tiles"])
+                # Redraw grid with loaded data
+                self.draw_grid()
+        except Exception:
+            pass
+
 
 def main():
     root = tk.Tk()
     root.minsize(800, 700)
+    # Maximize window on startup
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    root.geometry(f"{screen_width}x{screen_height}+0+0")
     app = KnittingDesigner(root)
     root.mainloop()
 
