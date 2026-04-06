@@ -694,8 +694,15 @@
       num.textContent = i + 1;
       btn.appendChild(num);
 
-      btn.addEventListener('click', () => pickColor(i));
-      btn.addEventListener('dblclick', e => { e.stopPropagation(); editColor(i); });
+      btn.addEventListener('click', () => {
+        btn._clickTimer = setTimeout(() => pickColor(i), 220);
+      });
+
+      btn.addEventListener('dblclick', e => {
+        e.stopPropagation();
+        clearTimeout(btn._clickTimer); // cancel the single-click
+        editColor(i);
+      });
 
       let lastTap = 0;
       btn.addEventListener('touchend', e => {
