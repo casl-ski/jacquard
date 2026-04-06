@@ -7,875 +7,843 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      background: #2d2d2d;
-      color: #ccc;
-      font-family: Arial, sans-serif;
-      display: flex;
-      height: 100dvh;
+    html, body {
+      width: 100%; height: 100%;
+      background: #1a1a1a;
       overflow: hidden;
-      user-select: none;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #ccc;
       -webkit-user-select: none;
+      user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
 
+    body { display: flex; height: 100dvh; }
+
     /* ---- SIDEBAR ---- */
     #sidebar {
-      width: 110px;
-      background: #222;
+      width: 96px;
+      flex-shrink: 0;
+      background: #181818;
+      border-right: 1px solid #2a2a2a;
       display: flex;
       flex-direction: column;
+      gap: 5px;
       padding: 8px 6px;
-      gap: 5px;
       overflow-y: auto;
-      flex-shrink: 0;
-      border-right: 1px solid #3a3a3a;
+      overflow-x: hidden;
     }
-    #sidebar::-webkit-scrollbar { width: 4px; }
-    #sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+    #sidebar::-webkit-scrollbar { width: 3px; }
+    #sidebar::-webkit-scrollbar-thumb { background: #3a3a3a; }
 
-    .section-title {
-      font-size: 10px;
-      color: #666;
-      text-align: center;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .sep { border: none; border-top: 1px solid #333; }
-
-    /* Color slots */
-    .color-slot {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 2px 3px;
-      border-radius: 4px;
-      cursor: pointer;
-      border: 2px solid transparent;
-    }
-    .color-slot:hover { background: #2e2e2e; }
-    .color-slot.selected { border-color: #fff; background: #2e2e2e; }
-
-    .color-swatch {
-      width: 26px;
-      height: 18px;
-      border-radius: 3px;
-      border: 1px solid #555;
-      flex-shrink: 0;
-    }
-    .slot-num { font-size: 10px; color: #666; min-width: 14px; }
-
-    /* Mark slot */
-    .mark-slot {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 2px 3px;
-      border-radius: 4px;
-      cursor: pointer;
-      border: 2px solid transparent;
-    }
-    .mark-slot:hover { background: #2e2e2e; }
-    .mark-slot.selected { border-color: #fff; background: #2e2e2e; }
-    .mark-swatch {
-      width: 26px;
-      height: 18px;
-      background: #444;
-      border: 1px solid #555;
-      border-radius: 3px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ff6666;
-      font-weight: bold;
-      font-size: 11px;
-      flex-shrink: 0;
-    }
-
-    /* Buttons */
-    .btn {
-      background: #383838;
-      color: #bbb;
-      border: none;
-      border-radius: 4px;
-      padding: 7px 4px;
-      cursor: pointer;
-      font-size: 11px;
-      width: 100%;
-      text-align: center;
-      min-height: 32px;
-    }
-    .btn:hover { background: #444; color: #eee; }
-    .btn:active { background: #555; }
-    .btn.active { background: #3a6ea5; color: #fff; }
-    .btn.active:hover { background: #4a7eb5; }
-
-    /* Zoom row */
-    .zoom-row { display: flex; align-items: center; gap: 4px; }
-    .zoom-btn {
-      background: #383838;
-      color: #ccc;
-      border: none;
-      border-radius: 4px;
-      width: 28px;
-      height: 28px;
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .zoom-btn:hover { background: #444; }
-    .zoom-btn:active { background: #555; }
-    #zoom-label { font-size: 10px; color: #777; text-align: center; flex: 1; }
-
-    .hint {
+    .lbl {
       font-size: 9px;
       color: #444;
       text-align: center;
-      line-height: 1.6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    /* ---- MAIN AREA ---- */
-    #main {
-      flex: 1;
+    hr { border: none; border-top: 1px solid #242424; flex-shrink: 0; }
+
+    /* Palette – 2 columns */
+    #palette {
       display: grid;
-      grid-template-columns: 24px 1fr;
-      grid-template-rows: 24px 1fr;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+    }
+    .c-btn {
+      height: 26px;
+      border-radius: 3px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.1s;
+    }
+    .c-btn:hover { border-color: #777; }
+    .c-btn.sel  { border-color: #fff; }
+    .c-num {
+      position: absolute;
+      bottom: 1px; right: 2px;
+      font-size: 8px;
+      color: rgba(255,255,255,0.55);
+      text-shadow: 0 0 3px #000;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .mark-btn {
+      grid-column: span 2;
+      height: 26px;
+      border-radius: 3px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      background: #252525;
+      color: #ff5555;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .mark-btn:hover { background: #2e2e2e; }
+    .mark-btn.sel { border-color: #fff; }
+
+    /* Buttons */
+    .btn {
+      height: 30px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      background: #242424;
+      color: #999;
+      width: 100%;
+      flex-shrink: 0;
+    }
+    .btn:hover { background: #2e2e2e; color: #ddd; }
+    .btn:active { background: #333; }
+    .btn.active { background: #1a3a60; color: #7ab8ff; }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+    }
+
+    #zoom-lbl {
+      font-size: 10px;
+      color: #555;
+      text-align: center;
+    }
+
+    .hint {
+      font-size: 9px;
+      color: #2e2e2e;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    /* ---- CANVAS AREA ---- */
+    #wrap {
+      flex: 1;
+      position: relative;
       overflow: hidden;
-      min-width: 0;
     }
 
-    #corner { background: #333; }
-
-    #col-header-wrap {
-      overflow: hidden;
-      background: #333;
-    }
-    #col-header { display: block; }
-
-    #row-header-wrap {
-      overflow: hidden;
-      background: #333;
-    }
-    #row-header { display: block; }
-
-    #grid-wrap {
-      overflow: auto;
-      background: #2d2d2d;
-    }
-    #grid-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
-    #grid-wrap::-webkit-scrollbar-track { background: #222; }
-    #grid-wrap::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-
-    #grid-canvas {
+    #cv {
       display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
       cursor: crosshair;
-      touch-action: pan-x pan-y; /* finger pans; pen/mouse handled via Pointer Events */
     }
 
-    /* Hidden color input */
     #color-input { display: none; }
-
-    /* Tablet adjustments */
-    @media (max-width: 700px) {
-      #sidebar { width: 80px; }
-      .color-swatch { width: 20px; height: 14px; }
-    }
   </style>
 </head>
 <body>
 
 <div id="sidebar">
-  <div class="section-title">Colors</div>
-  <div id="color-list"></div>
 
-  <hr class="sep">
-  <div class="section-title">Tools</div>
+  <div class="lbl">Colors</div>
+  <div id="palette"></div>
+
+  <hr>
+  <div class="lbl">Tool</div>
   <button class="btn active" id="btn-paint">Paint</button>
   <button class="btn" id="btn-select">Select</button>
 
-  <hr class="sep">
-  <div class="section-title">Zoom</div>
-  <div class="zoom-row">
-    <button class="zoom-btn" id="btn-zoom-out">−</button>
-    <span id="zoom-label">100%</span>
-    <button class="zoom-btn" id="btn-zoom-in">+</button>
+  <hr>
+  <div class="lbl">Zoom</div>
+  <div class="btn-row">
+    <button class="btn" id="btn-zi">+</button>
+    <button class="btn" id="btn-zo">−</button>
   </div>
+  <div id="zoom-lbl">100%</div>
 
-  <hr class="sep">
-  <button class="btn" id="btn-copy">Copy</button>
+  <hr>
+  <button class="btn" id="btn-undo">↩ Undo</button>
+  <div class="btn-row">
+    <button class="btn" id="btn-copy">Copy</button>
+    <button class="btn" id="btn-paste">Paste</button>
+  </div>
   <button class="btn" id="btn-cut">Cut</button>
-  <button class="btn" id="btn-paste">Paste</button>
-  <button class="btn" id="btn-undo">Undo</button>
-
-  <hr class="sep">
   <button class="btn" id="btn-clear">Clear</button>
+
+  <hr>
   <button class="btn" id="btn-save">Save ↓</button>
   <button class="btn" id="btn-load">Load ↑</button>
 
-  <hr class="sep">
+  <hr>
   <div class="hint">
-    Pen: draw<br>
-    Finger: scroll<br>
-    Color: dbl-tap<br>
-    Zoom: ± buttons<br>
-    Undo: Ctrl+Z
+    Pen/mouse: draw<br>
+    Finger: pan<br>
+    Pinch: zoom<br>
+    Scroll: zoom<br>
+    Space+drag: pan<br>
+    Mid-btn: pan
   </div>
 </div>
 
-<div id="main">
-  <div id="corner"></div>
-  <div id="col-header-wrap"><canvas id="col-header"></canvas></div>
-  <div id="row-header-wrap"><canvas id="row-header"></canvas></div>
-  <div id="grid-wrap">
-    <canvas id="grid-canvas"></canvas>
-  </div>
-</div>
-
+<div id="wrap"><canvas id="cv"></canvas></div>
 <input type="color" id="color-input">
 
 <script>
 (() => {
-  const GRID_SIZE = 64;
+  // ── Constants ────────────────────────────────────────────────
+  const GRID       = 64;
   const MAX_COLORS = 15;
-  const MAX_UNDO = 50;
-  const HEADER_SIZE = 24;
-  const DEFAULT_COLOR = '#f5f5f5';
-  const DEFAULT_TILE_SIZE = 12;
-  const MIN_TILE = 4;
-  const MAX_TILE = 48;
+  const MAX_UNDO   = 50;
+  const HDR        = 28;   // header strip px
+  const MIN_S      = 2;
+  const MAX_S      = 80;
+  const DEF_COLOR  = '#f5f5f5';
+  const BASE_S     = 16;   // "100%" reference scale
 
-  // ---- State ----
-  let tileSize = DEFAULT_TILE_SIZE;
-  let colors = Array(MAX_COLORS).fill('#ffffff');
+  // ── State ────────────────────────────────────────────────────
+  let vx = 0, vy = 0, vs = BASE_S;  // viewport: translate + scale
+  let colors   = Array(MAX_COLORS).fill('#ffffff');
   colors[0] = '#3a6ea5';
-  let gridData = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(DEFAULT_COLOR));
-  let markedTiles = new Set(); // "row,col"
-
-  let selectedColorIndex = 0;
+  let grid     = Array.from({ length: GRID }, () => Array(GRID).fill(DEF_COLOR));
+  let marks    = new Set();   // "r,c"
+  let selIdx   = 0;
   let markMode = false;
-  let toolMode = 'paint'; // 'paint' | 'select'
+  let tool     = 'paint';     // 'paint' | 'select'
+  let undos    = [];
+  let stroke   = [];
+  let sel0 = null, sel1 = null, clip = null;
 
-  let undoHistory = [];
-  let currentStroke = [];
-  let isDragging = false;
-  let markAdding = true;
+  // input
+  let action   = null;   // 'draw' | 'pan' | 'select'
+  let panRef   = null;   // { x, y, vx, vy }
+  let lastCell = null;   // last painted [r,c]
+  let markAdd  = true;
+  let space    = false;
+  let fingers  = new Map(); // touch id → {x,y}
 
-  let selStart = null; // [row, col]
-  let selEnd = null;
-  let clipboard = null;
+  // ── DOM ──────────────────────────────────────────────────────
+  const cv    = document.getElementById('cv');
+  const ctx   = cv.getContext('2d');
+  const wrap  = document.getElementById('wrap');
+  const zlbl  = document.getElementById('zoom-lbl');
+  const cinp  = document.getElementById('color-input');
 
-  // ---- DOM ----
-  const colHeaderCanvas = document.getElementById('col-header');
-  const rowHeaderCanvas = document.getElementById('row-header');
-  const gridCanvas = document.getElementById('grid-canvas');
-  const gridWrap = document.getElementById('grid-wrap');
-  const colHeaderWrap = document.getElementById('col-header-wrap');
-  const rowHeaderWrap = document.getElementById('row-header-wrap');
-  const colorList = document.getElementById('color-list');
-  const zoomLabel = document.getElementById('zoom-label');
-  const colorInput = document.getElementById('color-input');
+  // ── Canvas resize ────────────────────────────────────────────
+  new ResizeObserver(() => {
+    cv.width  = wrap.clientWidth;
+    cv.height = wrap.clientHeight;
+    dirty();
+  }).observe(wrap);
 
-  const gctx = gridCanvas.getContext('2d');
-  const cctx = colHeaderCanvas.getContext('2d');
-  const rctx = rowHeaderCanvas.getContext('2d');
-
-  // ---- Layout ----
-  function updateLayout() {
-    const size = GRID_SIZE * tileSize;
-    gridCanvas.width = size;
-    gridCanvas.height = size;
-    colHeaderCanvas.width = size;
-    colHeaderCanvas.height = HEADER_SIZE;
-    rowHeaderCanvas.width = HEADER_SIZE;
-    rowHeaderCanvas.height = size;
-    drawAll();
+  // ── Render loop ──────────────────────────────────────────────
+  let pending = false;
+  function dirty() {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(render);
   }
 
-  // ---- Drawing ----
-  function drawAll() {
-    drawGrid();
-    drawColHeader();
-    drawRowHeader();
-  }
+  function render() {
+    pending = false;
+    const W = cv.width, H = cv.height;
+    const ox = HDR + vx, oy = HDR + vy;  // screen origin of grid
 
-  function drawGrid() {
-    const size = GRID_SIZE * tileSize;
-    gctx.clearRect(0, 0, size, size);
+    // visible tile range
+    const c0 = Math.max(0, Math.floor(-vx / vs));
+    const r0 = Math.max(0, Math.floor(-vy / vs));
+    const c1 = Math.min(GRID, Math.ceil((W - HDR - vx) / vs));
+    const r1 = Math.min(GRID, Math.ceil((H - HDR - vy) / vs));
 
-    for (let row = 0; row < GRID_SIZE; row++) {
-      for (let col = 0; col < GRID_SIZE; col++) {
-        const x = col * tileSize;
-        const y = row * tileSize;
-        gctx.fillStyle = gridData[row][col];
-        gctx.fillRect(x, y, tileSize, tileSize);
-        if (tileSize >= 5) {
-          gctx.strokeStyle = '#4a4a4a';
-          gctx.lineWidth = 0.5;
-          gctx.strokeRect(x + 0.5, y + 0.5, tileSize - 1, tileSize - 1);
-        }
+    // background
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, W, H);
+
+    // ── tiles ──────────────────────────────────────────────────
+    for (let r = r0; r < r1; r++) {
+      for (let c = c0; c < c1; c++) {
+        const x  = Math.round(ox + c * vs);
+        const y  = Math.round(oy + r * vs);
+        const x2 = Math.round(ox + (c + 1) * vs);
+        const y2 = Math.round(oy + (r + 1) * vs);
+        ctx.fillStyle = grid[r][c];
+        ctx.fillRect(x, y, x2 - x, y2 - y);
       }
     }
 
-    // Marks
-    markedTiles.forEach(key => {
-      const [row, col] = key.split(',').map(Number);
-      drawMarkOn(row, col);
-    });
-
-    // Selection
-    if (selStart && selEnd) drawSelectionRect();
-  }
-
-  function drawMarkOn(row, col) {
-    const x = col * tileSize;
-    const y = row * tileSize;
-    const pad = Math.max(1, Math.floor(tileSize / 6));
-    gctx.strokeStyle = '#ff2222';
-    gctx.lineWidth = Math.max(1, tileSize / 18);
-    gctx.beginPath();
-    gctx.moveTo(x + pad, y + pad);
-    gctx.lineTo(x + tileSize - pad, y + tileSize - pad);
-    gctx.moveTo(x + tileSize - pad, y + pad);
-    gctx.lineTo(x + pad, y + tileSize - pad);
-    gctx.stroke();
-  }
-
-  function drawSelectionRect() {
-    const r1 = Math.min(selStart[0], selEnd[0]);
-    const c1 = Math.min(selStart[1], selEnd[1]);
-    const r2 = Math.max(selStart[0], selEnd[0]);
-    const c2 = Math.max(selStart[1], selEnd[1]);
-    const x = c1 * tileSize;
-    const y = r1 * tileSize;
-    const w = (c2 - c1 + 1) * tileSize;
-    const h = (r2 - r1 + 1) * tileSize;
-
-    gctx.strokeStyle = '#000';
-    gctx.lineWidth = 3;
-    gctx.setLineDash([]);
-    gctx.strokeRect(x - 1, y - 1, w + 2, h + 2);
-
-    gctx.strokeStyle = '#00ffff';
-    gctx.lineWidth = 2;
-    gctx.setLineDash([8, 4]);
-    gctx.strokeRect(x, y, w, h);
-    gctx.setLineDash([]);
-  }
-
-  function drawColHeader() {
-    const w = colHeaderCanvas.width;
-    cctx.fillStyle = '#333';
-    cctx.fillRect(0, 0, w, HEADER_SIZE);
-    const fontSize = Math.max(6, Math.min(10, tileSize - 1));
-    cctx.font = `${fontSize}px Arial`;
-    cctx.fillStyle = '#777';
-    cctx.textAlign = 'center';
-    cctx.textBaseline = 'middle';
-    const step = tileSize < 8 ? Math.ceil(8 / tileSize) : 1;
-    for (let col = 0; col < GRID_SIZE; col += step) {
-      cctx.fillText(col + 1, col * tileSize + tileSize / 2, HEADER_SIZE / 2);
+    // ── grid lines ─────────────────────────────────────────────
+    if (vs >= 4) {
+      ctx.beginPath();
+      for (let c = c0; c <= c1; c++) {
+        const x = Math.round(ox + c * vs) + 0.5;
+        ctx.moveTo(x, Math.round(oy + r0 * vs));
+        ctx.lineTo(x, Math.round(oy + r1 * vs));
+      }
+      for (let r = r0; r <= r1; r++) {
+        const y = Math.round(oy + r * vs) + 0.5;
+        ctx.moveTo(Math.round(ox + c0 * vs), y);
+        ctx.lineTo(Math.round(ox + c1 * vs), y);
+      }
+      ctx.strokeStyle = 'rgba(65,65,65,0.9)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.stroke();
     }
-  }
 
-  function drawRowHeader() {
-    const h = rowHeaderCanvas.height;
-    rctx.fillStyle = '#333';
-    rctx.fillRect(0, 0, HEADER_SIZE, h);
-    const fontSize = Math.max(6, Math.min(10, tileSize - 1));
-    rctx.font = `${fontSize}px Arial`;
-    rctx.fillStyle = '#777';
-    rctx.textAlign = 'center';
-    rctx.textBaseline = 'middle';
-    const step = tileSize < 8 ? Math.ceil(8 / tileSize) : 1;
-    for (let row = 0; row < GRID_SIZE; row += step) {
-      rctx.fillText(row + 1, HEADER_SIZE / 2, row * tileSize + tileSize / 2);
-    }
-  }
+    // ── grid border ────────────────────────────────────────────
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([]);
+    ctx.strokeRect(ox + 0.5, oy + 0.5, GRID * vs, GRID * vs);
 
-  // Fast single-tile redraw (no full redraw needed for paint)
-  function redrawTile(row, col) {
-    const x = col * tileSize;
-    const y = row * tileSize;
-    gctx.fillStyle = gridData[row][col];
-    gctx.fillRect(x, y, tileSize, tileSize);
-    if (tileSize >= 5) {
-      gctx.strokeStyle = '#4a4a4a';
-      gctx.lineWidth = 0.5;
-      gctx.strokeRect(x + 0.5, y + 0.5, tileSize - 1, tileSize - 1);
-    }
-    if (markedTiles.has(`${row},${col}`)) drawMarkOn(row, col);
-  }
-
-  // ---- Color Panel ----
-  function buildColorPanel() {
-    colorList.innerHTML = '';
-
-    for (let i = 0; i < MAX_COLORS; i++) {
-      const slot = document.createElement('div');
-      slot.className = 'color-slot' + (i === selectedColorIndex && !markMode ? ' selected' : '');
-
-      const swatch = document.createElement('div');
-      swatch.className = 'color-swatch';
-      swatch.style.background = colors[i];
-      swatch.style.cursor = 'pointer';
-
-      // Single-click selects, double-click edits
-      swatch.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selectColor(i);
+    // ── marks ──────────────────────────────────────────────────
+    if (marks.size) {
+      const lw = Math.max(1.5, vs / 14);
+      const pad = Math.max(1, vs * 0.14);
+      ctx.strokeStyle = '#ee2222';
+      ctx.lineWidth = lw;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      marks.forEach(key => {
+        const [r, c] = key.split(',').map(Number);
+        if (r < r0 || r >= r1 || c < c0 || c >= c1) return;
+        const x = ox + c * vs, y = oy + r * vs;
+        ctx.moveTo(x + pad,      y + pad);
+        ctx.lineTo(x + vs - pad, y + vs - pad);
+        ctx.moveTo(x + vs - pad, y + pad);
+        ctx.lineTo(x + pad,      y + vs - pad);
       });
-      swatch.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        editColor(i);
-      });
-
-      // Double-tap for touch (always preventDefault to block synthetic click)
-      let lastTap = 0;
-      swatch.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        const now = Date.now();
-        if (now - lastTap < 350) {
-          editColor(i);
-        } else {
-          selectColor(i);
-        }
-        lastTap = now;
-      }, { passive: false });
-
-      const num = document.createElement('span');
-      num.className = 'slot-num';
-      num.textContent = i + 1;
-
-      slot.appendChild(swatch);
-      slot.appendChild(num);
-      colorList.appendChild(slot);
+      ctx.stroke();
     }
 
-    // Mark slot
-    const markSlot = document.createElement('div');
-    markSlot.className = 'mark-slot' + (markMode ? ' selected' : '');
-    const markSwatch = document.createElement('div');
-    markSwatch.className = 'mark-swatch';
-    markSwatch.textContent = 'X';
-    markSwatch.addEventListener('click', toggleMarkMode);
-    const markNum = document.createElement('span');
-    markNum.className = 'slot-num';
-    markNum.textContent = 'Mark';
-    markSlot.appendChild(markSwatch);
-    markSlot.appendChild(markNum);
-    colorList.appendChild(markSlot);
+    // ── selection ──────────────────────────────────────────────
+    if (sel0 && sel1) {
+      const sr1 = Math.min(sel0[0], sel1[0]);
+      const sc1 = Math.min(sel0[1], sel1[1]);
+      const sr2 = Math.max(sel0[0], sel1[0]);
+      const sc2 = Math.max(sel0[1], sel1[1]);
+      const sx = ox + sc1 * vs, sy = oy + sr1 * vs;
+      const sw = (sc2 - sc1 + 1) * vs, sh = (sr2 - sr1 + 1) * vs;
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(sx, sy, sw, sh);
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 5]);
+      ctx.strokeRect(sx, sy, sw, sh);
+      ctx.setLineDash([]);
+    }
+
+    // ── headers (drawn last, on top) ───────────────────────────
+    // backgrounds
+    ctx.fillStyle = '#181818';
+    ctx.fillRect(0, 0, HDR, H);          // left strip
+    ctx.fillRect(0, 0, W, HDR);          // top strip
+
+    // separators
+    ctx.strokeStyle = '#2e2e2e';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(HDR + 0.5, 0); ctx.lineTo(HDR + 0.5, H);
+    ctx.moveTo(0, HDR + 0.5); ctx.lineTo(W, HDR + 0.5);
+    ctx.stroke();
+
+    // numbers
+    const fontSize = Math.max(7, Math.min(11, vs * 0.55));
+    ctx.font = `${fontSize}px system-ui,sans-serif`;
+    ctx.fillStyle = '#555';
+    ctx.setLineDash([]);
+    const step = Math.max(1, Math.ceil(14 / vs));
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(HDR + 1, 0, W - HDR - 1, HDR); ctx.clip();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let c = c0; c < c1; c += step)
+      ctx.fillText(c + 1, ox + c * vs + vs / 2, HDR / 2);
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, HDR + 1, HDR, H - HDR - 1); ctx.clip();
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let r = r0; r < r1; r += step)
+      ctx.fillText(r + 1, HDR - 3, oy + r * vs + vs / 2);
+    ctx.restore();
   }
 
-  function selectColor(index) {
-    selectedColorIndex = index;
-    markMode = false;
-    if (toolMode !== 'select') toolMode = 'paint';
-    updateToolButtons();
-    buildColorPanel();
+  // ── Init view (fit grid in viewport) ─────────────────────────
+  function initView() {
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    vs = Math.min((W - HDR) / GRID, (H - HDR) / GRID) * 0.92;
+    vs = Math.max(MIN_S, Math.min(MAX_S, vs));
+    vx = ((W - HDR) - GRID * vs) / 2;
+    vy = ((H - HDR) - GRID * vs) / 2;
+    zlbl.textContent = Math.round(vs / BASE_S * 100) + '%';
   }
 
-  function toggleMarkMode() {
-    markMode = true;
-    selectedColorIndex = -1;
-    if (toolMode !== 'select') toolMode = 'paint';
-    updateToolButtons();
-    buildColorPanel();
+  // ── Coords ───────────────────────────────────────────────────
+  function cvPos(e) {
+    const r = cv.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
-  let editingIndex = -1;
-  function editColor(index) {
-    editingIndex = index;
-    colorInput.value = colors[index];
-    colorInput.click();
+  function toTile(sx, sy) {
+    if (sx < HDR || sy < HDR) return null;
+    const c = Math.floor((sx - HDR - vx) / vs);
+    const r = Math.floor((sy - HDR - vy) / vs);
+    return (c >= 0 && c < GRID && r >= 0 && r < GRID) ? [r, c] : null;
   }
 
-  colorInput.addEventListener('input', () => {
-    if (editingIndex < 0) return;
-    colors[editingIndex] = colorInput.value;
-    buildColorPanel();
-    saveSettings();
-  });
-  colorInput.addEventListener('change', () => {
-    if (editingIndex < 0) return;
-    colors[editingIndex] = colorInput.value;
-    buildColorPanel();
-    saveSettings();
-  });
-
-  // ---- Tool Mode ----
-  function updateToolButtons() {
-    document.getElementById('btn-paint').classList.toggle('active', toolMode === 'paint');
-    document.getElementById('btn-select').classList.toggle('active', toolMode === 'select');
+  // ── Zoom (toward point sx,sy in canvas coords) ───────────────
+  function zoomAt(sx, sy, factor) {
+    const prev = vs;
+    vs = Math.max(MIN_S, Math.min(MAX_S, vs * factor));
+    if (vs === prev) return;
+    const ratio = vs / prev;
+    vx = (sx - HDR) * (1 - ratio) + vx * ratio;
+    vy = (sy - HDR) * (1 - ratio) + vy * ratio;
+    zlbl.textContent = Math.round(vs / BASE_S * 100) + '%';
+    dirty();
   }
 
-  document.getElementById('btn-paint').addEventListener('click', () => {
-    toolMode = 'paint';
-    markMode = false;
-    updateToolButtons();
-  });
-  document.getElementById('btn-select').addEventListener('click', () => {
-    toolMode = 'select';
-    markMode = false;
-    updateToolButtons();
-  });
-
-  // ---- Zoom ----
-  function zoom(dir) {
-    const prev = tileSize;
-    tileSize = Math.max(MIN_TILE, Math.min(MAX_TILE, tileSize + dir));
-    if (tileSize === prev) return;
-    zoomLabel.textContent = Math.round((tileSize / DEFAULT_TILE_SIZE) * 100) + '%';
-    // Preserve scroll center
-    const wx = gridWrap.scrollLeft + gridWrap.clientWidth / 2;
-    const wy = gridWrap.scrollTop + gridWrap.clientHeight / 2;
-    const centerCol = wx / prev;
-    const centerRow = wy / prev;
-    updateLayout();
-    gridWrap.scrollLeft = centerCol * tileSize - gridWrap.clientWidth / 2;
-    gridWrap.scrollTop = centerRow * tileSize - gridWrap.clientHeight / 2;
-    syncHeaders();
+  function zoomBtn(dir) {
+    zoomAt(cv.width / 2, cv.height / 2, dir > 0 ? 1.3 : 1 / 1.3);
   }
 
-  document.getElementById('btn-zoom-in').addEventListener('click', () => zoom(1));
-  document.getElementById('btn-zoom-out').addEventListener('click', () => zoom(-1));
-
-  // ---- Hit Test ----
-  function getTileAt(clientX, clientY) {
-    const rect = gridCanvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    const col = Math.floor(x / tileSize);
-    const row = Math.floor(y / tileSize);
-    if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) return [row, col];
-    return null;
-  }
-
-  // ---- Paint ----
-  function paintTile(row, col) {
-    const color = colors[selectedColorIndex];
-    const old = gridData[row][col];
+  // ── Paint / mark ─────────────────────────────────────────────
+  function paintCell(r, c) {
+    if (selIdx < 0) return;
+    const color = colors[selIdx];
+    const old = grid[r][c];
     if (old === color) return;
-    currentStroke.push([row, col, old]);
-    gridData[row][col] = color;
-    redrawTile(row, col);
+    stroke.push([r, c, old]);
+    grid[r][c] = color;
   }
 
-  // ---- Mark ----
-  function toggleMark(row, col) {
-    const key = `${row},${col}`;
-    if (markedTiles.has(key)) markedTiles.delete(key);
-    else markedTiles.add(key);
-    redrawTile(row, col);
+  function toggleMark(r, c) {
+    const k = `${r},${c}`;
+    if (marks.has(k)) marks.delete(k); else marks.add(k);
   }
-
-  // ---- Pointer Events (mouse + pen; finger pans via CSS touch-action) ----
-  // pointerType 'touch' → ignored here, browser handles native scroll
-  // pointerType 'pen' or 'mouse' → draw/select
-
-  gridCanvas.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'touch') return;
-    if (e.button !== 0 && e.pointerType === 'mouse') return;
-    e.preventDefault();
-    gridCanvas.setPointerCapture(e.pointerId); // keeps events coming even off-canvas
-    const pos = getTileAt(e.clientX, e.clientY);
-    if (!pos) return;
-    isDragging = true;
-
-    if (toolMode === 'select') {
-      selStart = pos; selEnd = pos;
-      drawGrid();
-      return;
-    }
-    if (markMode) {
-      markAdding = !markedTiles.has(`${pos[0]},${pos[1]}`);
-      toggleMark(...pos);
-    } else {
-      currentStroke = [];
-      paintTile(...pos);
-    }
-  });
-
-  gridCanvas.addEventListener('pointermove', (e) => {
-    if (e.pointerType === 'touch') return;
-    if (!isDragging) return;
-    const pos = getTileAt(e.clientX, e.clientY);
-    if (!pos) return;
-
-    if (toolMode === 'select') {
-      selEnd = pos;
-      drawGrid();
-      return;
-    }
-    if (markMode) {
-      const marked = markedTiles.has(`${pos[0]},${pos[1]}`);
-      if (markAdding && !marked) toggleMark(...pos);
-      else if (!markAdding && marked) toggleMark(...pos);
-    } else {
-      paintTile(...pos);
-    }
-  });
-
-  gridCanvas.addEventListener('pointerup', (e) => {
-    if (e.pointerType === 'touch') return;
-    if (!isDragging) return;
-    isDragging = false;
-    commitStroke();
-  });
-
-  gridCanvas.addEventListener('pointercancel', (e) => {
-    if (e.pointerType === 'touch') return;
-    isDragging = false;
-    currentStroke = [];
-  });
-
-  // Right-click (mouse only) → activate select tool
-  gridCanvas.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    toolMode = 'select';
-    updateToolButtons();
-    const pos = getTileAt(e.clientX, e.clientY);
-    if (pos) { selStart = pos; selEnd = pos; isDragging = true; }
-  });
-
-  // Mouse wheel zoom
-  gridCanvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    zoom(e.deltaY < 0 ? 1 : -1);
-  }, { passive: false });
 
   function commitStroke() {
-    if (currentStroke.length > 0) {
-      undoHistory.push(currentStroke);
-      if (undoHistory.length > MAX_UNDO) undoHistory.shift();
+    if (stroke.length) {
+      undos.push(stroke);
+      if (undos.length > MAX_UNDO) undos.shift();
+      stroke = [];
     }
-    currentStroke = [];
     autoSave();
   }
 
-  // ---- Scroll Sync ----
-  function syncHeaders() {
-    colHeaderWrap.scrollLeft = gridWrap.scrollLeft;
-    rowHeaderWrap.scrollTop = gridWrap.scrollTop;
-  }
-  gridWrap.addEventListener('scroll', syncHeaders);
+  // ── Pointer events (pen + mouse) ─────────────────────────────
+  cv.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') return;
+    const p = cvPos(e);
+    const doPan    = e.button === 1 || (e.button === 0 && space);
+    const doSelect = e.button === 2
+                  || (e.button === 0 && (e.ctrlKey || e.metaKey))
+                  || tool === 'select';
 
-  // ---- Keyboard ----
-  document.addEventListener('keydown', (e) => {
-    const mod = e.ctrlKey || e.metaKey;
-    if (mod) {
-      switch (e.key.toLowerCase()) {
-        case 'z': e.preventDefault(); undo(); break;
-        case 'c': e.preventDefault(); copySelection(); break;
-        case 'x': e.preventDefault(); cutSelection(); break;
-        case 'v': e.preventDefault(); pasteSelection(); break;
-        case 's': e.preventDefault(); exportProject(); break;
-        case '=': case '+': e.preventDefault(); zoom(1); break;
-        case '-': e.preventDefault(); zoom(-1); break;
+    e.preventDefault();
+    cv.setPointerCapture(e.pointerId);
+
+    if (doPan) {
+      action = 'pan';
+      panRef = { x: p.x, y: p.y, vx, vy };
+      cv.style.cursor = 'grabbing';
+    } else if (doSelect) {
+      const pos = toTile(p.x, p.y);
+      if (pos) { action = 'select'; sel0 = pos; sel1 = pos; dirty(); }
+    } else {
+      const pos = toTile(p.x, p.y);
+      if (pos) {
+        action = 'draw';
+        if (markMode) {
+          markAdd = !marks.has(`${pos[0]},${pos[1]}`);
+          toggleMark(...pos); dirty();
+        } else {
+          stroke = []; lastCell = null;
+          paintCell(...pos); lastCell = pos; dirty();
+        }
       }
     }
-    if (e.key === 'Escape') clearSelection();
   });
 
-  // ---- Undo ----
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    const p = cvPos(e);
+
+    if (action === 'pan') {
+      vx = panRef.vx + (p.x - panRef.x);
+      vy = panRef.vy + (p.y - panRef.y);
+      dirty();
+    } else if (action === 'select') {
+      const pos = toTile(p.x, p.y);
+      if (pos) { sel1 = pos; dirty(); }
+    } else if (action === 'draw') {
+      const pos = toTile(p.x, p.y);
+      if (!pos) return;
+      if (markMode) {
+        const has = marks.has(`${pos[0]},${pos[1]}`);
+        if (markAdd !== has) { toggleMark(...pos); dirty(); }
+      } else {
+        if (!lastCell || pos[0] !== lastCell[0] || pos[1] !== lastCell[1]) {
+          paintCell(...pos); lastCell = pos; dirty();
+        }
+      }
+    }
+  });
+
+  cv.addEventListener('pointerup', e => {
+    if (e.pointerType === 'touch') return;
+    if (action === 'draw') commitStroke();
+    if (action === 'pan') cv.style.cursor = space ? 'grab' : 'crosshair';
+    action = null; panRef = null;
+  });
+
+  cv.addEventListener('pointercancel', e => {
+    if (e.pointerType === 'touch') return;
+    action = null; panRef = null; stroke = [];
+  });
+
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+
+  cv.addEventListener('wheel', e => {
+    e.preventDefault();
+    const p = cvPos(e);
+    zoomAt(p.x, p.y, e.deltaY < 0 ? 1.1 : 1 / 1.1);
+  }, { passive: false });
+
+  // ── Touch events (fingers: pan + pinch) ──────────────────────
+  cv.addEventListener('touchstart', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches)
+      fingers.set(t.identifier, { x: t.clientX, y: t.clientY });
+  }, { passive: false });
+
+  cv.addEventListener('touchmove', e => {
+    e.preventDefault();
+
+    // snapshot previous positions
+    const prev = new Map(Array.from(fingers).map(([id, p]) => [id, { ...p }]));
+
+    // update positions
+    for (const t of e.changedTouches)
+      if (fingers.has(t.identifier))
+        fingers.get(t.identifier).x = t.clientX,
+        fingers.get(t.identifier).y = t.clientY;
+
+    const ids = Array.from(fingers.keys());
+    const rect = cv.getBoundingClientRect();
+
+    if (fingers.size === 1) {
+      const id  = ids[0];
+      const cur = fingers.get(id);
+      const prv = prev.get(id);
+      if (prv) { vx += cur.x - prv.x; vy += cur.y - prv.y; dirty(); }
+
+    } else if (fingers.size >= 2) {
+      const [id1, id2] = ids;
+      const c1 = fingers.get(id1), c2 = fingers.get(id2);
+      const p1 = prev.get(id1) || c1,  p2 = prev.get(id2) || c2;
+
+      const pDist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+      const cDist = Math.hypot(c1.x - c2.x, c1.y - c2.y);
+
+      // centers in canvas coords
+      const pcx = (p1.x + p2.x) / 2 - rect.left;
+      const pcy = (p1.y + p2.y) / 2 - rect.top;
+      const ccx = (c1.x + c2.x) / 2 - rect.left;
+      const ccy = (c1.y + c2.y) / 2 - rect.top;
+
+      if (pDist > 2) {
+        // combined pan+zoom in one shot — keeps prev center at curr center
+        const newVs = Math.max(MIN_S, Math.min(MAX_S, vs * cDist / pDist));
+        const ratio = newVs / vs;
+        vx = ccx - HDR - (pcx - HDR - vx) * ratio;
+        vy = ccy - HDR - (pcy - HDR - vy) * ratio;
+        vs = newVs;
+        zlbl.textContent = Math.round(vs / BASE_S * 100) + '%';
+        dirty();
+      } else {
+        // pure pan
+        vx += ccx - pcx; vy += ccy - pcy; dirty();
+      }
+    }
+  }, { passive: false });
+
+  cv.addEventListener('touchend', e => {
+    for (const t of e.changedTouches) fingers.delete(t.identifier);
+  }, { passive: false });
+
+  cv.addEventListener('touchcancel', e => {
+    for (const t of e.changedTouches) fingers.delete(t.identifier);
+  }, { passive: false });
+
+  // ── Keyboard ─────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !e.repeat) {
+      space = true;
+      if (action !== 'pan') cv.style.cursor = 'grab';
+      e.preventDefault();
+    }
+    if (e.key === 'Escape') { sel0 = null; sel1 = null; dirty(); }
+
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod) return;
+    switch (e.key.toLowerCase()) {
+      case 'z': e.preventDefault(); undo();           break;
+      case 'c': e.preventDefault(); copysel();        break;
+      case 'x': e.preventDefault(); cutsel();         break;
+      case 'v': e.preventDefault(); paste();          break;
+      case 's': e.preventDefault(); exportProj();     break;
+      case '=': case '+': e.preventDefault(); zoomBtn(1);  break;
+      case '-': e.preventDefault(); zoomBtn(-1); break;
+    }
+  });
+
+  document.addEventListener('keyup', e => {
+    if (e.code === 'Space') {
+      space = false;
+      if (action !== 'pan') cv.style.cursor = 'crosshair';
+    }
+  });
+
+  // ── Undo ─────────────────────────────────────────────────────
   function undo() {
-    if (!undoHistory.length) return;
-    const stroke = undoHistory.pop();
-    stroke.forEach(([row, col, old]) => {
-      gridData[row][col] = old;
-    });
-    drawGrid();
-    autoSave();
+    if (!undos.length) return;
+    undos.pop().forEach(([r, c, old]) => { grid[r][c] = old; });
+    dirty(); autoSave();
   }
 
-  // ---- Clear ----
+  // ── Clear ────────────────────────────────────────────────────
   function clearGrid() {
     if (!confirm('Clear the entire grid?')) return;
     const snap = [];
-    for (let r = 0; r < GRID_SIZE; r++)
-      for (let c = 0; c < GRID_SIZE; c++)
-        if (gridData[r][c] !== DEFAULT_COLOR) {
-          snap.push([r, c, gridData[r][c]]);
-          gridData[r][c] = DEFAULT_COLOR;
+    for (let r = 0; r < GRID; r++)
+      for (let c = 0; c < GRID; c++)
+        if (grid[r][c] !== DEF_COLOR) {
+          snap.push([r, c, grid[r][c]]);
+          grid[r][c] = DEF_COLOR;
         }
-    if (snap.length) undoHistory.push(snap);
-    markedTiles.clear();
-    drawGrid();
-    autoSave();
+    marks.clear();
+    if (snap.length) undos.push(snap);
+    dirty(); autoSave();
   }
 
-  // ---- Selection ----
-  function clearSelection() {
-    selStart = null; selEnd = null;
-    drawGrid();
-  }
-
-  function getSelBounds() {
-    if (!selStart || !selEnd) return null;
+  // ── Selection ────────────────────────────────────────────────
+  function bounds() {
+    if (!sel0 || !sel1) return null;
     return {
-      r1: Math.min(selStart[0], selEnd[0]),
-      c1: Math.min(selStart[1], selEnd[1]),
-      r2: Math.max(selStart[0], selEnd[0]),
-      c2: Math.max(selStart[1], selEnd[1]),
+      r1: Math.min(sel0[0], sel1[0]), c1: Math.min(sel0[1], sel1[1]),
+      r2: Math.max(sel0[0], sel1[0]), c2: Math.max(sel0[1], sel1[1]),
     };
   }
 
-  function copySelection() {
-    const b = getSelBounds();
-    if (!b) return;
-    clipboard = [];
+  function copysel() {
+    const b = bounds(); if (!b) return;
+    clip = [];
     for (let r = b.r1; r <= b.r2; r++) {
       const row = [];
-      for (let c = b.c1; c <= b.c2; c++) row.push(gridData[r][c]);
-      clipboard.push(row);
+      for (let c = b.c1; c <= b.c2; c++) row.push(grid[r][c]);
+      clip.push(row);
     }
   }
 
-  function cutSelection() {
-    const b = getSelBounds();
-    if (!b) return;
-    copySelection();
+  function cutsel() {
+    const b = bounds(); if (!b) return;
+    copysel();
     const snap = [];
     for (let r = b.r1; r <= b.r2; r++)
       for (let c = b.c1; c <= b.c2; c++)
-        if (gridData[r][c] !== DEFAULT_COLOR) {
-          snap.push([r, c, gridData[r][c]]);
-          gridData[r][c] = DEFAULT_COLOR;
+        if (grid[r][c] !== DEF_COLOR) {
+          snap.push([r, c, grid[r][c]]);
+          grid[r][c] = DEF_COLOR;
         }
-    if (snap.length) undoHistory.push(snap);
-    drawGrid();
-    autoSave();
+    if (snap.length) undos.push(snap);
+    dirty(); autoSave();
   }
 
-  function pasteSelection() {
-    if (!clipboard) return;
-    const sr = selStart ? selStart[0] : 0;
-    const sc = selStart ? selStart[1] : 0;
+  function paste() {
+    if (!clip) return;
+    const sr = sel0 ? sel0[0] : 0, sc = sel0 ? sel0[1] : 0;
     const snap = [];
-    clipboard.forEach((row, ri) => {
-      row.forEach((color, ci) => {
-        const r = sr + ri, c = sc + ci;
-        if (r < GRID_SIZE && c < GRID_SIZE && gridData[r][c] !== color) {
-          snap.push([r, c, gridData[r][c]]);
-          gridData[r][c] = color;
-        }
-      });
-    });
-    if (snap.length) undoHistory.push(snap);
-    drawGrid();
-    autoSave();
+    clip.forEach((row, ri) => row.forEach((color, ci) => {
+      const r = sr + ri, c = sc + ci;
+      if (r < GRID && c < GRID && grid[r][c] !== color) {
+        snap.push([r, c, grid[r][c]]);
+        grid[r][c] = color;
+      }
+    }));
+    if (snap.length) undos.push(snap);
+    dirty(); autoSave();
   }
 
-  // ---- Button Bindings ----
-  document.getElementById('btn-copy').addEventListener('click', copySelection);
-  document.getElementById('btn-cut').addEventListener('click', cutSelection);
-  document.getElementById('btn-paste').addEventListener('click', pasteSelection);
+  // ── Palette ──────────────────────────────────────────────────
+  function buildPalette() {
+    const p = document.getElementById('palette');
+    p.innerHTML = '';
+
+    for (let i = 0; i < MAX_COLORS; i++) {
+      const btn = document.createElement('div');
+      btn.className = 'c-btn' + (i === selIdx && !markMode ? ' sel' : '');
+      btn.style.background = colors[i];
+
+      const num = document.createElement('span');
+      num.className = 'c-num';
+      num.textContent = i + 1;
+      btn.appendChild(num);
+
+      btn.addEventListener('click', () => pickColor(i));
+      btn.addEventListener('dblclick', e => { e.stopPropagation(); editColor(i); });
+
+      let lastTap = 0;
+      btn.addEventListener('touchend', e => {
+        e.preventDefault();
+        const now = Date.now();
+        if (now - lastTap < 380) editColor(i);
+        else pickColor(i);
+        lastTap = now;
+      }, { passive: false });
+
+      p.appendChild(btn);
+    }
+
+    const mb = document.createElement('div');
+    mb.className = 'mark-btn' + (markMode ? ' sel' : '');
+    mb.innerHTML = '✕ Mark';
+    mb.addEventListener('click', toggleMarkMode);
+    let mTap = 0;
+    mb.addEventListener('touchend', e => {
+      e.preventDefault();
+      const now = Date.now();
+      if (now - mTap > 200) toggleMarkMode();
+      mTap = now;
+    }, { passive: false });
+    p.appendChild(mb);
+  }
+
+  function pickColor(i) { selIdx = i; markMode = false; buildPalette(); }
+  function toggleMarkMode() { markMode = true; selIdx = -1; buildPalette(); }
+
+  let editIdx = -1;
+  function editColor(i) { editIdx = i; cinp.value = colors[i]; cinp.click(); }
+
+  cinp.addEventListener('input', () => {
+    if (editIdx < 0) return;
+    colors[editIdx] = cinp.value;
+    buildPalette(); saveSettings();
+  });
+  cinp.addEventListener('change', () => {
+    if (editIdx < 0) return;
+    colors[editIdx] = cinp.value;
+    buildPalette(); saveSettings();
+  });
+
+  // ── Tool buttons ─────────────────────────────────────────────
+  document.getElementById('btn-paint').addEventListener('click', () => {
+    tool = 'paint';
+    document.getElementById('btn-paint').classList.add('active');
+    document.getElementById('btn-select').classList.remove('active');
+  });
+  document.getElementById('btn-select').addEventListener('click', () => {
+    tool = 'select';
+    document.getElementById('btn-select').classList.add('active');
+    document.getElementById('btn-paint').classList.remove('active');
+  });
+  document.getElementById('btn-zi').addEventListener('click', () => zoomBtn(1));
+  document.getElementById('btn-zo').addEventListener('click', () => zoomBtn(-1));
   document.getElementById('btn-undo').addEventListener('click', undo);
   document.getElementById('btn-clear').addEventListener('click', clearGrid);
-  document.getElementById('btn-save').addEventListener('click', exportProject);
-  document.getElementById('btn-load').addEventListener('click', importProject);
+  document.getElementById('btn-copy').addEventListener('click', copysel);
+  document.getElementById('btn-cut').addEventListener('click', cutsel);
+  document.getElementById('btn-paste').addEventListener('click', paste);
+  document.getElementById('btn-save').addEventListener('click', exportProj);
+  document.getElementById('btn-load').addEventListener('click', importProj);
 
-  // ---- Persistence ----
+  // ── Persistence ──────────────────────────────────────────────
   function saveSettings() {
-    try { localStorage.setItem('jacquard_settings', JSON.stringify({ colors })); } catch (e) {}
+    try { localStorage.setItem('jq_s', JSON.stringify({ colors })); } catch {}
   }
-
   function loadSettings() {
     try {
-      const raw = localStorage.getItem('jacquard_settings');
-      if (!raw) return;
-      const s = JSON.parse(raw);
-      if (s.colors) {
+      const s = JSON.parse(localStorage.getItem('jq_s') || 'null');
+      if (s?.colors) {
         colors = s.colors.slice(0, MAX_COLORS);
         while (colors.length < MAX_COLORS) colors.push('#ffffff');
       }
-    } catch (e) {}
+    } catch {}
   }
-
   function autoSave() {
     try {
-      localStorage.setItem('jacquard_project', JSON.stringify({
-        gridData,
-        markedTiles: Array.from(markedTiles),
+      localStorage.setItem('jq_p', JSON.stringify({
+        grid, marks: Array.from(marks)
       }));
-    } catch (e) {}
+    } catch {}
   }
-
-  function loadProject() {
+  function loadProj() {
     try {
-      const raw = localStorage.getItem('jacquard_project');
-      if (!raw) return;
-      const p = JSON.parse(raw);
-      if (p.gridData) {
-        const loaded = p.gridData;
-        for (let r = 0; r < Math.min(loaded.length, GRID_SIZE); r++)
-          for (let c = 0; c < Math.min(loaded[r].length, GRID_SIZE); c++)
-            gridData[r][c] = loaded[r][c];
+      const p = JSON.parse(localStorage.getItem('jq_p') || 'null');
+      if (!p) return;
+      if (p.grid) {
+        const d = p.grid;
+        for (let r = 0; r < Math.min(d.length, GRID); r++)
+          for (let c = 0; c < Math.min(d[r].length, GRID); c++)
+            grid[r][c] = d[r][c];
       }
-      if (p.markedTiles) markedTiles = new Set(p.markedTiles);
-    } catch (e) {}
+      if (p.marks) marks = new Set(p.marks);
+    } catch {}
   }
 
-  function exportProject() {
-    const data = JSON.stringify({
-      gridData,
-      markedTiles: Array.from(markedTiles),
-      colors,
-    }, null, 2);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
-    a.download = 'knitting_project.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
+  function exportProj() {
+    const blob = new Blob(
+      [JSON.stringify({ grid, marks: Array.from(marks), colors }, null, 2)],
+      { type: 'application/json' }
+    );
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob), download: 'knitting_project.json'
+    });
+    a.click(); URL.revokeObjectURL(a.href);
   }
 
-  function importProject() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+  function importProj() {
+    const inp = Object.assign(document.createElement('input'), {
+      type: 'file', accept: '.json'
+    });
+    inp.onchange = () => {
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = ev => {
         try {
           const p = JSON.parse(ev.target.result);
-          gridData = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(DEFAULT_COLOR));
-          if (p.gridData) {
-            const loaded = p.gridData;
-            for (let r = 0; r < Math.min(loaded.length, GRID_SIZE); r++)
-              for (let c = 0; c < Math.min(loaded[r].length, GRID_SIZE); c++)
-                gridData[r][c] = loaded[r][c];
+          grid = Array.from({ length: GRID }, () => Array(GRID).fill(DEF_COLOR));
+          if (p.grid) {
+            const d = p.grid;
+            for (let r = 0; r < Math.min(d.length, GRID); r++)
+              for (let c = 0; c < Math.min(d[r].length, GRID); c++)
+                grid[r][c] = d[r][c];
           }
-          if (p.markedTiles) markedTiles = new Set(p.markedTiles);
+          if (p.marks) marks = new Set(p.marks);
           if (p.colors) {
             colors = p.colors.slice(0, MAX_COLORS);
             while (colors.length < MAX_COLORS) colors.push('#ffffff');
             saveSettings();
           }
-          buildColorPanel();
-          drawAll();
-          autoSave();
-        } catch (err) {
-          alert('Could not read project file.');
-        }
+          buildPalette(); dirty(); autoSave();
+        } catch { alert('Invalid file.'); }
       };
-      reader.readAsText(file);
+      reader.readAsText(inp.files[0]);
     };
-    input.click();
+    inp.click();
   }
 
-  // ---- Init ----
+  // ── Init ─────────────────────────────────────────────────────
   loadSettings();
-  loadProject();
-  buildColorPanel();
-  updateLayout();
-  updateToolButtons();
-  zoomLabel.textContent = '100%';
+  loadProj();
+  buildPalette();
+  cv.width  = wrap.clientWidth;
+  cv.height = wrap.clientHeight;
+  initView();
+  dirty();
 
 })();
 </script>
